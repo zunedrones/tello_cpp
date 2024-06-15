@@ -1,6 +1,5 @@
 //  Biblioteca para comunicação com o DJI Ryze Tello Drone
 //  Fonte: https://github.com/carlospzlz/ctello
-//  Copyright (C) 2020 Carlos Perez-Lopez
 
 #include "tello.h"
 
