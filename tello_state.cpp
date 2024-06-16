@@ -9,13 +9,13 @@ using tello::Tello;
 void ShowStatus(const std::string& state) {
     int ret = system("clear");
     if (ret == -1) {
-        std::cerr << "Error clearing the screen" << std::endl;
+        std::cerr << "Error clearing the screen" << "\n";
         return;
     }
 
     int begin{0};
-    std::cout << "+-----------+-----------+" << std::endl;
-    const int padding{10};
+    std::cout << "+-----------+-----------+" << "\n";
+    const int padding = 10;
     while (begin < state.size()) {
         const auto split{state.find(':', begin)};
         const auto name{state.substr(begin, split - begin)};
@@ -27,9 +27,9 @@ void ShowStatus(const std::string& state) {
         std::cout << std::setw(padding - name.size()) << "|";
         std::cout << "  " << value;
         std::cout << std::setw(padding - value.size()) << "|";
-        std::cout << std::endl;
+        std::cout << "\n";
     }
-    std::cout << "+-----------+-----------+" << std::endl;
+    std::cout << "+-----------+-----------+" << "\n";
 }
 
 int main() {

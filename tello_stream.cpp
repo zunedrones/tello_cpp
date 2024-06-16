@@ -14,11 +14,11 @@ using cv::waitKey;
 using tello::Tello;
 
 int main() {
-    // std::cout << cv::getBuildInformation() << std::endl;
+    // std::cout << cv::getBuildInformation() << "\n";
 
     Tello tello{};
     if (!tello.Bind()) {
-        std::cerr << "Falha na conexão com o Tello." << std::endl;
+        std::cerr << "Falha na conexão com o Tello." << "\n";
         return 0;
     }
 
@@ -30,14 +30,14 @@ int main() {
     for (int i = 0; i < 10; i++) {
         response = tello.ReceiveResponse();
         if (response.has_value()) {
-            std::cout << "Resposta: " << *response << std::endl;
+            std::cout << "Resposta: " << *response << "\n";
             break;
         }
         sleep(1);
     }
 
     if (!response.has_value()) {
-        std::cerr << "Sem resposta para o comando 'streamon'." << std::endl;
+        std::cerr << "Sem resposta para o comando 'streamon'." << "\n";
         return 0;
     }
 
@@ -47,16 +47,18 @@ int main() {
     VideoCapture capture("udp://0.0.0.0:11111", cv::CAP_FFMPEG);
     sleep(1);
     if (!capture.isOpened()) {
-        std::cerr << "Erro ao abrir o stream de vídeo!" << std::endl;
+        std::cerr << "Erro ao abrir o stream de vídeo!" << "\n";
         return -1;
     }
 
+    std::optional<std::string> bat;
     cv::namedWindow("Tello");
     cv::Mat frame;
     auto start = std::chrono::high_resolution_clock::now();
     int frame_count = 0;
     while (true) {
         frame_count++;
+        tello.SendCommand("battery?");
         capture >> frame;
         if (!frame.empty()) {
             auto end = std::chrono::high_resolution_clock::now();
@@ -67,12 +69,13 @@ int main() {
                 "FPS: " + std::to_string(static_cast<int>(fps));
             cv::putText(frame, fps_text, cv::Point(10, 30),
                         cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 255, 0), 2);
-            /* std::string bat_text = "Battery: " + "80%";
-            cv::putText(frame, bat_text, cv::Point(450, 450),
-                        cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 0, 255), 2); */
+            /* bat = tello.ReceiveResponse();        
+            std::string bat_text = "Battery: " + std::to_string((bat));
+            cv::putText(frame, bat, cv::Point(450, 450),
+                        cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 0, 255), 2);  */
             imshow("Tello", frame);
         } else {
-            std::cerr << "Frame vazio recebido." << std::endl;
+            std::cerr << "Frame vazio recebido." << "\n";
         }
         if (waitKey(1) == 'q') {
             break;
