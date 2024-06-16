@@ -1,27 +1,23 @@
+#include <chrono>
 #include <iostream>
-#include "unistd.h"
 
+#include "opencv2/opencv.hpp"
 #include "tello.h"
-#include "opencv2/core.hpp"
-#include "opencv2/highgui.hpp"
-#include "opencv2/imgcodecs.hpp"
-#include "opencv2/videoio.hpp"
+#include "unistd.h"
 
 const char* const TELLO_STREAM_URL = "udp://0.0.0.0:11111";
 
-using tello::Tello;
 using cv::CAP_FFMPEG;
 using cv::imshow;
 using cv::VideoCapture;
 using cv::waitKey;
+using tello::Tello;
 
-int main()
-{
-    //std::cout << cv::getBuildInformation() << std::endl;
+int main() {
+    // std::cout << cv::getBuildInformation() << std::endl;
 
     Tello tello{};
-    if (!tello.Bind())
-    {
+    if (!tello.Bind()) {
         std::cerr << "Falha na conexão com o Tello." << std::endl;
         return 0;
     }
@@ -29,7 +25,7 @@ int main()
     tello.SendCommand("streamon");
     std::cout << "Comando enviado: 'streamon' \n";
     std::optional<std::string> response;
-    
+
     // Espera por uma resposta do comando "streamon"
     for (int i = 0; i < 10; i++) {
         response = tello.ReceiveResponse();
@@ -50,25 +46,36 @@ int main()
 
     VideoCapture capture("udp://0.0.0.0:11111", cv::CAP_FFMPEG);
     sleep(1);
-     if (!capture.isOpened()) {
+    if (!capture.isOpened()) {
         std::cerr << "Erro ao abrir o stream de vídeo!" << std::endl;
         return -1;
-    } 
+    }
 
     cv::namedWindow("Tello");
-    while (true)
-    {
-        cv::Mat frame;
+    cv::Mat frame;
+    auto start = std::chrono::high_resolution_clock::now();
+    int frame_count = 0;
+    while (true) {
+        frame_count++;
         capture >> frame;
         if (!frame.empty()) {
+            auto end = std::chrono::high_resolution_clock::now();
+            std::chrono::duration<double> elapsed = end - start;
+            double fps = frame_count / elapsed.count();
+
+            std::string fps_text =
+                "FPS: " + std::to_string(static_cast<int>(fps));
+            cv::putText(frame, fps_text, cv::Point(10, 30),
+                        cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 0, 255), 2);
             imshow("Tello", frame);
         } else {
             std::cerr << "Frame vazio recebido." << std::endl;
         }
-        if (waitKey(1) == 'q')
-        {
+        if (waitKey(1) == 'q') {
             break;
         }
     }
+    capture.release();
+    cv::destroyAllWindows();
     return 0;
 }
