@@ -67,6 +67,9 @@ int main() {
                 "FPS: " + std::to_string(static_cast<int>(fps));
             cv::putText(frame, fps_text, cv::Point(10, 30),
                         cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 0, 255), 2);
+            /* std::string bat_text = "Battery: " + "80%";
+            cv::putText(frame, bat_text, cv::Point(450, 450),
+                        cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 0, 255), 2); */
             imshow("Tello", frame);
         } else {
             std::cerr << "Frame vazio recebido." << std::endl;

@@ -6,20 +6,17 @@
 
 using tello::Tello;
 
-void ShowStatus(const std::string& state)
-{
+void ShowStatus(const std::string& state) {
     int ret = system("clear");
-    if (ret == -1)
-    {
+    if (ret == -1) {
         std::cerr << "Error clearing the screen" << std::endl;
         return;
     }
-    
+
     int begin{0};
     std::cout << "+-----------+-----------+" << std::endl;
     const int padding{10};
-    while (begin < state.size())
-    {
+    while (begin < state.size()) {
         const auto split{state.find(':', begin)};
         const auto name{state.substr(begin, split - begin)};
         const auto end{state.find(';', split)};
@@ -35,18 +32,14 @@ void ShowStatus(const std::string& state)
     std::cout << "+-----------+-----------+" << std::endl;
 }
 
-int main()
-{
+int main() {
     Tello tello{};
-    if (!tello.Bind())
-    {
+    if (!tello.Bind()) {
         return 0;
     }
 
-    while (true)
-    {
-        if (const auto state = tello.GetState())
-        {
+    while (true) {
+        if (const auto state = tello.GetState()) {
             ShowStatus(*state);
         }
     }

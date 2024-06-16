@@ -14,17 +14,16 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <unistd.h>
+
 #include <sstream>
 
 #include "spdlog/spdlog.h"
 
 const char* const LOG_PATTERN = "[%D %T] [tello] [%^%l%$] %v";
 
-namespace
-{
+namespace {
 // Reads the spdlog level from the given environment variable name.
-spdlog::level::level_enum GetLogLevelFromEnv(const std::string& var_name)
-{
+spdlog::level::level_enum GetLogLevelFromEnv(const std::string& var_name) {
     // clang-format off
     std::unordered_map<std::string, spdlog::level::level_enum> name_to_enum = {
         {"trace", spdlog::level::trace},
@@ -37,8 +36,7 @@ spdlog::level::level_enum GetLogLevelFromEnv(const std::string& var_name)
     };
     // clang-format on
     const char* const name_c_str = std::getenv(var_name.c_str());
-    if (!name_c_str)
-    {
+    if (!name_c_str) {
         // Info is the default
         return spdlog::level::info;
     }
@@ -48,8 +46,8 @@ spdlog::level::level_enum GetLogLevelFromEnv(const std::string& var_name)
 
 // Binds the given socket file descriptor ot the given port.
 // Returns whether it succeeds or not and the error message.
-std::pair<bool, std::string> BindSocketToPort(const int sockfd, const int port)
-{
+std::pair<bool, std::string> BindSocketToPort(const int sockfd,
+                                              const int port) {
     sockaddr_in listen_addr{};
     // htons converts from host byte order to network byte order.
     listen_addr.sin_port = htons(port);
@@ -58,8 +56,7 @@ std::pair<bool, std::string> BindSocketToPort(const int sockfd, const int port)
     int result = bind(sockfd, reinterpret_cast<sockaddr*>(&listen_addr),
                       sizeof(listen_addr));
 
-    if (result == -1)
-    {
+    if (result == -1) {
         std::stringstream ss;
         ss << "bind to " << port << ": " << errno;
         ss << " (" << strerror(errno) << ")";
@@ -73,16 +70,14 @@ std::pair<bool, std::string> BindSocketToPort(const int sockfd, const int port)
 // Returns whether it succeeds or not and the error message.
 std::pair<bool, std::string> FindSocketAddr(const char* const ip,
                                             const char* const port,
-                                            sockaddr_storage* const addr)
-{
+                                            sockaddr_storage* const addr) {
     addrinfo* result_list{nullptr};
     addrinfo hints{};
     hints.ai_family = AF_INET;
     hints.ai_socktype = SOCK_DGRAM;
     int result = getaddrinfo(ip, port, &hints, &result_list);
 
-    if (result)
-    {
+    if (result) {
         std::stringstream ss;
         ss << "getaddrinfo: " << result;
         ss << " (" << gai_strerror(result) << ") ";
@@ -99,14 +94,12 @@ std::pair<bool, std::string> FindSocketAddr(const char* const ip,
 // Returns the number of sent bytes and, if -1, the error message.
 std::pair<int, std::string> SendTo(const int sockfd,
                                    sockaddr_storage& dest_addr,
-                                   const std::vector<unsigned char>& message)
-{
+                                   const std::vector<unsigned char>& message) {
     const socklen_t addr_len{sizeof(dest_addr)};
     int result = sendto(sockfd, message.data(), message.size(), 0,
                         reinterpret_cast<sockaddr*>(&dest_addr), addr_len);
 
-    if (result == -1)
-    {
+    if (result == -1) {
         std::stringstream ss;
         ss << "sendto: " << errno;
         ss << " (" << strerror(errno) << ")";
@@ -122,16 +115,14 @@ std::pair<int, std::string> ReceiveFrom(const int sockfd,
                                         sockaddr_storage& addr,
                                         std::vector<unsigned char>& buffer,
                                         const int buffer_size = 1024,
-                                        const int flags = MSG_DONTWAIT)
-{
+                                        const int flags = MSG_DONTWAIT) {
     socklen_t addr_len{sizeof(addr)};
     buffer.resize(buffer_size, '\0');
     // MSG_DONTWAIT -> Non-blocking
     // recvfrom is storing (re-populating) the sender address in addr.
     int result = recvfrom(sockfd, buffer.data(), buffer_size, flags,
                           reinterpret_cast<sockaddr*>(&addr), &addr_len);
-    if (result == -1)
-    {
+    if (result == -1) {
         std::stringstream ss;
         ss << "recvfrom: " << errno;
         ss << " (" << strerror(errno) << ")";
@@ -142,10 +133,8 @@ std::pair<int, std::string> ReceiveFrom(const int sockfd,
 }
 }  // namespace
 
-namespace tello
-{
-Tello::Tello()
-{
+namespace tello {
+Tello::Tello() {
     m_command_sockfd = socket(AF_INET, SOCK_DGRAM, 0);
     m_state_sockfd = socket(AF_INET, SOCK_DGRAM, 0);
     spdlog::set_pattern(LOG_PATTERN);
@@ -153,35 +142,30 @@ Tello::Tello()
     spdlog::set_level(log_level);
 }
 
-Tello::~Tello()
-{
+Tello::~Tello() {
     close(m_command_sockfd);
     close(m_state_sockfd);
 }
 
-bool Tello::Bind(const int local_client_command_port)
-{
+bool Tello::Bind(const int local_client_command_port) {
     // UDP Client to send commands and receive responses
     auto result =
         ::BindSocketToPort(m_command_sockfd, local_client_command_port);
-    if (!result.first)
-    {
+    if (!result.first) {
         spdlog::error(result.second);
         return false;
     }
     m_local_client_command_port = local_client_command_port;
     result = ::FindSocketAddr(TELLO_SERVER_IP, TELLO_SERVER_COMMAND_PORT,
                               &m_tello_server_command_addr);
-    if (!result.first)
-    {
+    if (!result.first) {
         spdlog::error(result.second);
         return false;
     }
 
     // Local UDP Server to listen for the Tello Status
     result = ::BindSocketToPort(m_state_sockfd, LOCAL_SERVER_STATE_PORT);
-    if (!result.first)
-    {
+    if (!result.first) {
         spdlog::error(result.second);
         return false;
     }
@@ -196,49 +180,42 @@ bool Tello::Bind(const int local_client_command_port)
     return true;
 }
 
-void Tello::FindTello()
-{
-    do
-    {
+void Tello::FindTello() {
+    do {
         SendCommand("command");
         sleep(1);
     } while (!(ReceiveResponse()));
 }
 
-void Tello::ShowTelloInfo()
-{
+void Tello::ShowTelloInfo() {
     std::optional<std::string> response;
 
-/*     SendCommand("sn?");
-    while (!(response = ReceiveResponse()))
-        ;
-    spdlog::info("Serial Number: {0}", *response);
+    /*     SendCommand("sn?");
+        while (!(response = ReceiveResponse()))
+            ;
+        spdlog::info("Serial Number: {0}", *response);
 
-    SendCommand("sdk?");
-    while (!(response = ReceiveResponse()))
-        ;
-    spdlog::info("Tello SDK:     {0}", *response); */
+        SendCommand("sdk?");
+        while (!(response = ReceiveResponse()))
+            ;
+        spdlog::info("Tello SDK:     {0}", *response); */
 
     SendCommand("wifi?");
-    while (!(response = ReceiveResponse()))
-        ;
+    while (!(response = ReceiveResponse()));
     spdlog::info("Wi-Fi Signal:  {0}", *response);
 
     SendCommand("battery?");
-    while (!(response = ReceiveResponse()))
-        ;
+    while (!(response = ReceiveResponse()));
     spdlog::info("Battery:       {0}", *response);
 }
 
-bool Tello::SendCommand(const std::string& command)
-{
+bool Tello::SendCommand(const std::string& command) {
     const std::vector<unsigned char> message{std::cbegin(command),
                                              std::cend(command)};
     const auto result =
         ::SendTo(m_command_sockfd, m_tello_server_command_addr, message);
     const int bytes{result.first};
-    if (bytes == -1)
-    {
+    if (bytes == -1) {
         spdlog::error(result.second);
         return false;
     }
@@ -248,15 +225,13 @@ bool Tello::SendCommand(const std::string& command)
     return true;
 }
 
-std::optional<std::string> Tello::ReceiveResponse()
-{
+std::optional<std::string> Tello::ReceiveResponse() {
     const int size{32};
     std::vector<unsigned char> buffer(size, '\0');
     const auto result = ::ReceiveFrom(
         m_command_sockfd, m_tello_server_command_addr, buffer, size);
     const int bytes{result.first};
-    if (bytes < 1)
-    {
+    if (bytes < 1) {
         return {};
     }
     std::string response{buffer.cbegin(), buffer.cbegin() + bytes};
@@ -268,15 +243,13 @@ std::optional<std::string> Tello::ReceiveResponse()
     return response;
 }
 
-std::optional<std::string> Tello::GetState()
-{
+std::optional<std::string> Tello::GetState() {
     sockaddr_storage addr;
     const int size{1024};
     std::vector<unsigned char> buffer(size, '\0');
     const auto result = ::ReceiveFrom(m_state_sockfd, addr, buffer, size);
     const int bytes{result.first};
-    if (bytes < 1)
-    {
+    if (bytes < 1) {
         return {};
     }
     std::string response{std::cbegin(buffer), std::cbegin(buffer) + bytes};
