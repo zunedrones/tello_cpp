@@ -245,7 +245,7 @@ std::optional<std::string> Tello::ReceiveResponse() {
 
 std::optional<std::string> Tello::GetState() {
     sockaddr_storage addr;
-    const int size{1024};
+    const int size = 1024;
     std::vector<unsigned char> buffer(size, '\0');
     const auto result = ::ReceiveFrom(m_state_sockfd, addr, buffer, size);
     const int bytes{result.first};
