@@ -43,21 +43,29 @@ int main() {
     }
 
     std::optional<std::string> bat;
-    cv::namedWindow("Tello");
     cv::Mat frame;
     cv::Mat resized_frame;
-    auto start = std::chrono::high_resolution_clock::now();
+    std::chrono::time_point<std::chrono::high_resolution_clock> start;
     int frame_count = 0;
-    double fps = 0;
+    int fps;
+    bool start_timing = false;
     while (true) {
-        frame_count++;
         tello.SendCommand("battery?");
         capture >> frame;
         if (!frame.empty()) {
-            auto end = std::chrono::high_resolution_clock::now();
-            std::chrono::duration<double> elapsed = end - start;
-            if (elapsed.count() >=1) {
+            if (!start_timing) {
+                cv::namedWindow("Tello");
+                start = std::chrono::high_resolution_clock::now();
+                start_timing = true;
+            } else {
+                frame_count++;
+                auto end = std::chrono::high_resolution_clock::now();
+                std::chrono::duration<double> elapsed = end - start;
+    
+            if (elapsed.count() >= 1.0) { 
                 fps = frame_count / elapsed.count();
+                frame_count = 0;
+                start = std::chrono::high_resolution_clock::now();
             }
             cv::resize(frame, resized_frame, cv::Size(544, 306));
             std::string fps_text =
@@ -68,6 +76,7 @@ int main() {
             cv::putText(resized_frame, "Battery: " + *bat + "%", cv::Point(330, 300),
                         cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 255, 0), 2);
             cv::imshow("Tello", resized_frame);
+            }
         }
         if (cv::waitKey(1) == 'q') {
             break;
