@@ -5,11 +5,12 @@
 #include "tello.h"
 #include "unistd.h"
 
+#define WIDGHT 720
+#define HEIGHT 480
+
 using tello::Tello;
 
 int main() {
-    // std::cout << cv::getBuildInformation() << "\n";
-
     Tello tello{};
     if (!tello.Bind()) {
         std::cerr << "Falha na conexão com o Tello." << "\n";
@@ -20,8 +21,7 @@ int main() {
     std::cout << "Comando enviado: 'streamon' \n";
     std::optional<std::string> response;
 
-    // Espera por uma resposta do comando "streamon"
-    for (int i = 0; i < 10; i++) {
+    for (int i = 0; i < 2; i++) {
         response = tello.ReceiveResponse();
         if (response.has_value()) {
             std::cout << "Resposta: " << *response << "\n";
@@ -34,7 +34,6 @@ int main() {
         std::cerr << "Sem resposta para o comando 'streamon'." << "\n";
         return 0;
     }
-
 
     cv::VideoCapture capture("udp://0.0.0.0:11111", cv::CAP_FFMPEG);
     if (!capture.isOpened()) {
@@ -49,6 +48,7 @@ int main() {
     int frame_count = 0;
     int fps;
     bool start_timing = false;
+    int batx = WIDGHT - 214, baty = HEIGHT - 6;
     while (true) {
         tello.SendCommand("battery?");
         capture >> frame;
@@ -61,21 +61,24 @@ int main() {
                 frame_count++;
                 auto end = std::chrono::high_resolution_clock::now();
                 std::chrono::duration<double> elapsed = end - start;
-    
-            if (elapsed.count() >= 1.0) { 
-                fps = frame_count / elapsed.count();
-                frame_count = 0;
-                start = std::chrono::high_resolution_clock::now();
-            }
-            cv::resize(frame, resized_frame, cv::Size(544, 306));
-            std::string fps_text =
-                "FPS: " + std::to_string(static_cast<int>(fps));
-            cv::putText(resized_frame, fps_text, cv::Point(10, 30),
-                        cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 255, 0), 2);
-            bat = tello.ReceiveResponse();
-            cv::putText(resized_frame, "Battery: " + *bat + "%", cv::Point(330, 300),
-                        cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 255, 0), 2);
-            cv::imshow("Tello", resized_frame);
+
+                if (elapsed.count() >= 1.0) {
+                    fps = frame_count / elapsed.count();
+                    frame_count = 0;
+                    start = std::chrono::high_resolution_clock::now();
+                }
+                cv::resize(frame, resized_frame, cv::Size(WIDGHT, HEIGHT));
+                std::string fps_text =
+                    "FPS: " + std::to_string(static_cast<int>(fps));
+                cv::putText(resized_frame, fps_text, cv::Point(10, 30),
+                            cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 255, 0),
+                            2);
+                bat = tello.ReceiveResponse();
+                cv::putText(resized_frame, "Bateria: " + *bat + "%",
+                            cv::Point(batx, baty),
+                            cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 255, 0),
+                            2);
+                cv::imshow("Tello", resized_frame);
             }
         }
         if (cv::waitKey(1) == 'q') {
