@@ -15,6 +15,7 @@ sudo apt-get install build-essential cmake git pkg-config \
                      wayland-protocols
 
 ```
+- Compilação:
 ```
 cmake -D CMAKE_BUILD_TYPE=RELEASE \
       -D CMAKE_INSTALL_PREFIX=/usr/local \
@@ -45,6 +46,7 @@ cmake -D CMAKE_BUILD_TYPE=RELEASE \
 4. Compilar
 
 ## Via terminal:
+- ~/tello_cpp$
 1. mkdir build
 2. cd build
 3. cmake ..
